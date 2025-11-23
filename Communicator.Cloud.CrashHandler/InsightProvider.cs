@@ -7,21 +7,30 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Google.GenAI;
 
 namespace Communicator.Cloud.CrashHandler;
 public class InsightProvider
 {
-    private HttpClient _client;
+    private Client _client;
+
+    private string _apiKey;
 
     private bool _connectionFlag;
 
     private string _deploymentModel = "gemini-2.5-flash";
 
-    InsightProvider()
+    public InsightProvider()
     {
         try
         {
-            
+            _apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+            if (_apiKey == null)
+            {
+                throw new Exception("APIKEY not found");
+            }
+            _client = new Client(apiKey: _apiKey);
+            _connectionFlag = true;
         }
         catch 
         {
@@ -29,8 +38,25 @@ public class InsightProvider
         }
     }
 
-    public string GetInsights(string exceptionPrompt)
+    public async Task<string> GetInsights(string exceptionPrompt)
     {
-        return "Error: unable to connect to model...";
+        Google.GenAI.Types.GenerateContentResponse response;
+
+        try
+        {
+            if (!_connectionFlag)
+            {
+                throw new Exception("Connection flag was reset");
+            }
+
+            response = await _client.Models.GenerateContentAsync(
+                model: _deploymentModel, contents: "Analyze what went wrong:" + exceptionPrompt);
+
+            return response.Candidates[0].Content.Parts[0].Text;
+        }
+        catch (Exception e)
+        {
+            return "No respones, NOJOY..." + e.Message;
+        }
     }
 }
