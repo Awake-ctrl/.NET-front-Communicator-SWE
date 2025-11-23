@@ -1,4 +1,12 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿/********************************************************************************
+ * Filename    = InsightProvider.cs
+ * Author      = Soorayanarayanan Ganesh
+ * Product     = cloud-function-app
+ * Project     = Comm-Uni-Cator
+ * Description = Connects to a Gemini model and generates AI response for crashes.
+ ********************************************************************************/
+
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -32,7 +40,7 @@ public class InsightProvider
             _client = new Client(apiKey: _apiKey);
             _connectionFlag = true;
         }
-        catch 
+        catch
         {
             _connectionFlag = false;
         }

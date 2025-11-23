@@ -1,4 +1,12 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿/******************************************************************************
+ * Filename    = CrashHandler.cs
+ * Author      = Soorayanarayanan Ganesh
+ * Product     = cloud-function-app
+ * Project     = Comm-Uni-Cator
+ * Description = Handles crashes and stores exceptions with java crash handler.
+ *****************************************************************************/
+
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -6,6 +14,8 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Communicator.Cloud.CloudFunction.DataStructures;
+using Communicator.Cloud.CloudFunction.FunctionLibrary;
 
 
 namespace Communicator.Cloud.CrashHandler;
@@ -41,18 +51,20 @@ public class CrashHandler : ICrashHandler
 
         try
         {
-            CloudResponse responseCreate = _cloudFunctionLibrary.cloudCreate(
-                new Entity("CLOUD", s_collection, null, null, -1, null, null));
+            JsonElement emptyJson = JsonDocument.Parse("{}").RootElement.Clone();
 
-            CloudResponse responseGet = _cloudFunctionLibrary.cloudGet(
-                new Entity("CLOUD", s_collection, null, null, 1, null, null));
+            CloudResponse responseCreate = _cloudFunctionLibrary.CloudCreateAsync(
+                new Entity("CLOUD", s_collection, null, null, -1, null, emptyJson)).GetAwaiter().GetResult();
 
-            if (responseCreate.status_code() != s_successCode || responseGet.status_code() != s_successCode)
+            CloudResponse responseGet = _cloudFunctionLibrary.CloudGetAsync(
+                new Entity("CLOUD", s_collection, null, null, 1, null, emptyJson)).GetAwaiter().GetResult();
+
+            if (responseCreate.StatusCode != s_successCode || responseGet.StatusCode != s_successCode)
             {
                 throw new Exception("Cloud Error...");
             }
 
-            s_exceptionId = responseGet.data[0]["id"].GetValue<int>();
+            s_exceptionId = int.Parse(responseGet.Data[0].GetProperty("id").GetString()!);
         }
         catch (Exception e)
         {
@@ -69,24 +81,27 @@ public class CrashHandler : ICrashHandler
             string exceptionStackTrace = exception.StackTrace;
 
             JsonNode exceptionJsonNode = ToJsonNode(exceptionName, timeStamp, exceptionMessage, exceptionString, exceptionStackTrace);
+            string jsonString = exceptionJsonNode.ToJsonString();
+            using JsonDocument doc = JsonDocument.Parse(jsonString);
+            JsonElement exceptionJsonElement = doc.RootElement.Clone();
 
             try
             {
-                string response = insightProvider.GetInsights(exceptionJsonNode.ToJsonString());
+                string response = insightProvider.GetInsights(exceptionJsonNode.ToJsonString()).GetAwaiter().GetResult();
                 exceptionJsonNode["AIResponse"] = response;
                 StoreDataToFile(exceptionJsonNode.ToJsonString());
 
-                EntityHandle exceptionEntity = new Entity(
+                Entity exceptionEntity = new Entity(
                     "CLOUD",
                     s_collection,
                     (++s_exceptionId).ToString(),
                     null,
                     -1,
                     null,
-                    exceptionJsonNode
+                    exceptionJsonElement
                 );
 
-                CloudResponse responsePost = _cloudFunctionLibrary.cloudPost(exceptionEntity);
+                CloudResponse responsePost = _cloudFunctionLibrary.CloudPostAsync(exceptionEntity).GetAwaiter().GetResult();
 
             }
             catch { }
@@ -98,7 +113,7 @@ public class CrashHandler : ICrashHandler
         var payload = new {
             ExceptionName = eName,
             TimestampUtc = timeStamp,
-            ExceptionMessage = eMsg, 
+            ExceptionMessage = eMsg,
             ExceptionDetails = eDetails,
             StackTrace = eTrace
         };
