@@ -20,8 +20,15 @@ namespace Communicator.Cloud.SignalR;
 /// </summary>
 public class NegotiateFunction
 {
+    /// <summary>
+    /// Logger instance for logging information.
+    /// </summary>
     private readonly ILogger<NegotiateFunction> _logger;
 
+    /// <summary>
+    /// Constructor to initialize the logger.
+    /// </summary>
+    /// <param name="logger">Used to instantiate logger</param>
     public NegotiateFunction(ILogger<NegotiateFunction> logger)
     {
         _logger = logger;
