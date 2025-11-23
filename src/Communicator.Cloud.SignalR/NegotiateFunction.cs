@@ -57,44 +57,46 @@ public class NegotiateFunction
     [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
     [SignalRConnectionInfoInput(HubName = "meetingHub")] SignalRConnectionInfo connectionInfo)
     {
-        // Parse meetingId from query string
-        var query = HttpUtility.ParseQueryString(req.Url.Query);
-        string? meetingId = query["meetingId"];
-
-        if (string.IsNullOrEmpty(meetingId))
+        try
         {
-            var bad = req.CreateResponse(HttpStatusCode.BadRequest);
-            await bad.WriteStringAsync("meetingId is required");
-            return new NegotiateResponse { HttpResponse = bad };
-        }
+            var query = HttpUtility.ParseQueryString(req.Url.Query);
+            string? meetingId = query["meetingId"];
 
-        _logger.LogInformation($"Negotiation request received. MeetingId={meetingId}");
+            _logger.LogInformation($"Negotiation request received. MeetingId={meetingId}");
 
-        // Prepare the group action
-        var groupAction = new SignalRGroupAction(SignalRGroupActionType.Add)
-        {
-            UserId = meetingId,
-            GroupName = meetingId
-        };
-
-        // Prepare HTTP response
-        var http = req.CreateResponse(HttpStatusCode.OK);
-        await http.WriteAsJsonAsync(new
-        {
-            url = connectionInfo.Url,
-            accessToken = connectionInfo.AccessToken,
-            meetingId
-        });
-
-        // IMPORTANT: SignalROutput MUST be an array
-        return new NegotiateResponse
-        {
-            SignalROutput = new object[]
+            var groupAction = new SignalRGroupAction(SignalRGroupActionType.Add)
             {
-            connectionInfo,
-            groupAction
-            },
-            HttpResponse = http
-        };
+                UserId = meetingId,
+                GroupName = meetingId
+            };
+
+            var http = req.CreateResponse(HttpStatusCode.OK);
+            await http.WriteAsJsonAsync(new
+            {
+                url = connectionInfo.Url,
+                accessToken = connectionInfo.AccessToken,
+                meetingId
+            });
+
+            // IMPORTANT: return array to satisfy output binding
+            return new NegotiateResponse
+            {
+                SignalROutput = new object[] { connectionInfo, groupAction },
+                HttpResponse = http
+            };
+        }
+        catch (Exception ex)
+        {
+            // This reveals the true underlying problem
+            _logger.LogError(ex, "NEGOTIATE FAILED: {Message}", ex.Message);
+
+            var resp = req.CreateResponse(HttpStatusCode.InternalServerError);
+            await resp.WriteStringAsync(ex.ToString());
+            return new NegotiateResponse
+            {
+                HttpResponse = resp
+            };
+        }
     }
+
 }
