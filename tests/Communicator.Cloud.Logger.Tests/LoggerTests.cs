@@ -80,6 +80,28 @@ public class LoggerTests : IDisposable
     }
 
     [Fact]
+    public async Task ErrorAsync_MessageOnly_WritesToFile_AndCallsCloud()
+    {
+        var mockCloud = new Mock<ICloudFunctionLibrary>();
+        mockCloud
+            .Setup(m => m.SendLogAsync("TestModule", "ERROR", "Simple error message", It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var logger = new CloudLogger("TestModule", mockCloud.Object);
+
+        await logger.ErrorAsync("Simple error message");
+
+        string content = await File.ReadAllTextAsync(LogFile);
+
+        Assert.Contains("SEVERE", content);
+        Assert.Contains("Simple error message", content);
+
+        mockCloud.Verify(
+            m => m.SendLogAsync("TestModule", "ERROR", "Simple error message", It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task ErrorAsync_WithException_WritesToFile_AndCallsCloud()
     {
         var mockCloud = new Mock<ICloudFunctionLibrary>();
