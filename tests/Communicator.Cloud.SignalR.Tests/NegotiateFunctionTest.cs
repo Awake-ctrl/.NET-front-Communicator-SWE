@@ -90,11 +90,9 @@ public class NegotiateFunctionTests
         Dictionary<string, JsonElement> json = 
             JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(responseBody)!;
 
-        // Validate connection info fields
         Assert.Equal(fakeConnectionInfo.Url, json["url"].GetString());
         Assert.Equal(fakeConnectionInfo.AccessToken, json["accessToken"].GetString());
 
-        // Validate meetingId
         Assert.Equal("Test123", json["meetingId"].GetString());
 
         _mockLogger.Verify(
