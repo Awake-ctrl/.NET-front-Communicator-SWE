@@ -5,6 +5,8 @@
 * Project     = Cloud Logger
 * Description = Methods to store info, warnings and errors in Azure Telemetry.
 *****************************************************************************/
+using Communicator.Cloud.CloudFunction.FunctionLibrary;
+
 namespace Communicator.Cloud.Logger;
 
 public class CloudLogger
@@ -12,7 +14,7 @@ public class CloudLogger
     /// <summary>
     /// Library instance for sending log.
     /// </summary>
-    private readonly CloudFunctionLibrary _cloudLib;
+    private readonly ICloudFunctionLibrary _cloudLib;
 
     /// <summary>
     /// Path of local log file.
@@ -58,7 +60,7 @@ public class CloudLogger
     /// <summary>
     /// Internal constructor for unit testing.
     /// </summary>
-    public CloudLogger(string name, CloudFunctionLibrary cloudLib)
+    public CloudLogger(string name, ICloudFunctionLibrary cloudLib)
     {
         _moduleName = name;
         _cloudLib = cloudLib;

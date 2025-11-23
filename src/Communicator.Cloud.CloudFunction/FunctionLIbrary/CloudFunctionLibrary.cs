@@ -17,11 +17,12 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Communicator.Cloud.CloudFunction.DataStructures;
+using Communicator.Cloud.CloudFunction.FunctionLIbrary;
 
 /// <summary>
 /// Function Library for calling Azure Cloud Function APIs asynchronously.
 /// </summary>
-public sealed class CloudFunctionLibrary : IDisposable
+public sealed class CloudFunctionLibrary : ICloudFunctionLibrary, IDisposable
 {
     /// <summary>Base URL of the Cloud Functions.</summary>
     private readonly string baseUrl;

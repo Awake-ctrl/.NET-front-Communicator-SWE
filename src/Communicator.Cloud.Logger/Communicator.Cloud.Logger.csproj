@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Communicator.Cloud.CloudFunction\CloudFunctionLibrary.csproj" />
+  </ItemGroup>
+
 </Project>
