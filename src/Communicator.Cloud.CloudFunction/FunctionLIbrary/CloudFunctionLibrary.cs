@@ -17,7 +17,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Communicator.Cloud.CloudFunction.DataStructures;
-using Communicator.Cloud.CloudFunction.FunctionLIbrary;
+using Communicator.Cloud.CloudFunction.FunctionLibrary;
 
 /// <summary>
 /// Function Library for calling Azure Cloud Function APIs asynchronously.
