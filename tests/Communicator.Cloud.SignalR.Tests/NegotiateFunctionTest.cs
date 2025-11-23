@@ -1,12 +1,11 @@
 ﻿/******************************************************************************
-* Filename    = MessageSignalRTests.cs
+* Filename    = NegotiateFunctionTests.cs
 * Author      = Nikhil S Thomas
 * Product     = Comm-Uni-Cator
 * Project     = SignalR Function App
-* Description = Unit test for NegotiateFunction Azure Function.
+* Description = UnitUnit test for NegotiateFunction Azure Function.
 *****************************************************************************/
 
-using System.Collections.Specialized;
 using System.Net;
 using System.Text.Json;
 using Communicator.Cloud.SignalR;
@@ -44,8 +43,8 @@ public class NegotiateFunctionTests
             .ConfigureFunctionsWorkerDefaults()
             .Build();
 
-        IServiceProvider serviceProvider = host.Services;
-        _mockContext.Setup(c => c.InstanceServices).Returns(serviceProvider);
+        IServiceProvider services = host.Services;
+        _mockContext.Setup(c => c.InstanceServices).Returns(services);
 
         _mockRequest = new Mock<HttpRequestData>(_mockContext.Object);
         _function = new NegotiateFunction(_mockLogger.Object);
@@ -55,54 +54,51 @@ public class NegotiateFunctionTests
     /// Test for the NegotiateFunction Run method.
     /// </summary>
     [Fact]
-    public async Task NegotitateFunctionTest()
+    public async Task Negotiate_ReturnsConnectionInfoInResponse()
     {
+        // Fake connection info returned by SignalR binding
         var fakeConnectionInfo = new SignalRConnectionInfo {
             Url = "https://fake.service.com",
             AccessToken = "fake_access_token"
         };
 
-        var query = new NameValueCollection {
-            { "meetingId", "Test123" }
-        };
-        //_mockRequest.Setup(r => r.Query).Returns(query);
+        // Mock response
+        var stream = new MemoryStream();
+        var mockResponse = new Mock<HttpResponseData>(_mockContext.Object);
+        mockResponse.Setup(r => r.Body).Returns(stream);
+        mockResponse.Setup(r => r.Headers).Returns(new HttpHeadersCollection());
+        mockResponse.SetupProperty(r => r.StatusCode);
 
-        //_mockRequest.Setup(r => r.Url)
-        //    .Returns(new Uri("https://localhost/api/negotiate?meetingId=Test123"));
-        //var responseStream = new MemoryStream();
-        //var mockResponse = new Mock<HttpResponseData>(_mockContext.Object);
-        //mockResponse.Setup(r => r.Body).Returns(responseStream);
-        //mockResponse.Setup(r => r.Headers).Returns(new HttpHeadersCollection());
-        //mockResponse.SetupProperty(r => r.StatusCode);
+        _mockRequest.Setup(r => r.CreateResponse())
+                    .Returns(mockResponse.Object);
 
-        //_mockRequest.Setup(r => r.CreateResponse())
-        //            .Returns(mockResponse.Object);
+        // Call function
+        HttpResponseData result =
+            await _function.Negotiate(_mockRequest.Object, fakeConnectionInfo);
 
-        //NegotiateFunction.NegotiateResponse result = await _function.Run(_mockRequest.Object, fakeConnectionInfo);
+        // Assert status code
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
-        //Assert.Equal(HttpStatusCode.OK, result.HttpResponse!.StatusCode);
-        //HttpResponseData httpResponse = result.HttpResponse!;
+        // Read JSON response body
+        result.Body.Position = 0;
+        using var reader = new StreamReader(result.Body);
+        string jsonString = await reader.ReadToEndAsync();
 
-        //httpResponse.Body.Position = 0;
-        //using var reader = new StreamReader(httpResponse.Body);
-        //string responseBody = await reader.ReadToEndAsync();
+        Dictionary<string, JsonElement> json =
+            JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonString)!;
 
-        //Dictionary<string, JsonElement> json = 
-        //    JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(responseBody)!;
+        Assert.Equal(fakeConnectionInfo.Url, json["Url"].GetString());
+        Assert.Equal(fakeConnectionInfo.AccessToken, json["AccessToken"].GetString());
 
-        //Assert.Equal(fakeConnectionInfo.Url, json["url"].GetString());
-        //Assert.Equal(fakeConnectionInfo.AccessToken, json["accessToken"].GetString());
-
-        //Assert.Equal("Test123", json["meetingId"].GetString());
-
-        //_mockLogger.Verify(
-        //    log => log.Log(
-        //        It.Is<LogLevel>(level => level == LogLevel.Information),
-        //        It.IsAny<EventId>(),
-        //        It.Is<It.IsAnyType>((o, t) => o.ToString()!.Contains("Negotiation request received.")),
-        //        It.IsAny<Exception>(),
-        //        It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-        //    Times.Once
-        //);
+        // Logging verification
+        _mockLogger.Verify(
+            log => log.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((o, t) => o.ToString()!.Contains("Negotiation request received.")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once
+        );
     }
 }

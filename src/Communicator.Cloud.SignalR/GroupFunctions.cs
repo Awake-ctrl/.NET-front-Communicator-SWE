@@ -20,15 +20,22 @@ namespace Communicator.Cloud.SignalR;
 /// </summary>
 public class GroupFunctions
 {
+    /// <summary>
+    /// Logger instance for logging information.
+    /// </summary>
     private readonly ILogger<GroupFunctions> _logger;
 
+    /// <summary>
+    /// Constructor to initialize the logger.
+    /// </summary>
+    /// <param name="logger">Used to instantiate logger</param>
     public GroupFunctions(ILogger<GroupFunctions> logger)
     {
         _logger = logger;
     }
 
     /// <summary>
-    /// Response container to return SignalR group actions + HTTP response.
+    /// Response datastructure to return SignalR group actions and HTTP response.
     /// </summary>
     public class GroupResponse
     {
@@ -39,13 +46,16 @@ public class GroupFunctions
         public HttpResponseData? HttpResponse { get; set; }
     }
 
-    /***********************************************************************
-     * JOIN GROUP
-     ***********************************************************************/
+    /// <summary>
+    /// Add user to SignalR group based on meeting id and user id
+    /// </summary>
+    /// <param name="req">HTTP POST request containing meetingId and userId</param>
+    /// <returns>A <see cref="GroupResponse"/> with group add action and HTTP response.</returns>
     [Function("JoinGroup")]
     public async Task<GroupResponse> JoinGroup(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req)
     {
+        // Extract meeting id and user id
         var query = req.Query;
 
         string? meetingId = query["meetingId"];
@@ -60,6 +70,7 @@ public class GroupFunctions
 
         _logger.LogInformation($"User {userId} joining group {meetingId}");
 
+        // Create the SignalR group add action
         var action = new SignalRGroupAction(SignalRGroupActionType.Add)
         {
             GroupName = meetingId,
@@ -72,13 +83,16 @@ public class GroupFunctions
         return new GroupResponse { GroupAction = action, HttpResponse = ok };
     }
 
-    /***********************************************************************
-     * LEAVE GROUP
-     ***********************************************************************/
+    /// <summary>
+    /// Remove a user from SignalR group based on meeting id and user id
+    /// </summary>
+    /// <param name="req">HTTP POST request containing meetingId and userId</param>
+    /// <returns>A <see cref="GroupResponse"/> with group add action and HTTP response.</returns>
     [Function("LeaveGroup")]
     public async Task<GroupResponse> LeaveGroup(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req)
     {
+        // Extract meeting id and user id
         var query = req.Query;
 
         string? meetingId = query["meetingId"];
@@ -93,6 +107,7 @@ public class GroupFunctions
 
         _logger.LogInformation($"User {userId} leaving group {meetingId}");
 
+        // Create the SignalR group remove action
         var action = new SignalRGroupAction(SignalRGroupActionType.Remove)
         {
             GroupName = meetingId,
