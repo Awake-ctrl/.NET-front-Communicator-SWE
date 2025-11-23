@@ -20,24 +20,49 @@ using Communicator.Cloud.CloudFunction.FunctionLibrary;
 
 namespace Communicator.Cloud.CrashHandler;
 
+/// <summary>
+/// Class which handles logging and storing call stack and other exception
+/// related details.
+/// </summary>
 public class CrashHandler : ICrashHandler
 {
-
+    /// <summary>
+    /// Ensures singleton.
+    /// </summary>
     private static bool s_isCreated = false;
 
+    /// <summary>
+    /// CloudFunctionLibrary for the crashhandler.
+    /// </summary>
     private CloudFunctionLibrary _cloudFunctionLibrary;
 
+    /// <summary>
+    /// Collection name in CosmosDB to which the details are stored.
+    /// </summary>
     private static string s_collection = "Exception";
 
+    /// <summary>
+    /// Id for each of the data.
+    /// </summary>
     private static int s_exceptionId = 1;
 
+    /// <summary>
+    /// Success code for checking cloud function result.
+    /// </summary>
     private static int s_successCode = 200;
 
+    /// <summary>
+    /// Constructor for the crashhandler.
+    /// </summary>
+    /// <param name="cloudFunctionLibrary"></param>
     public CrashHandler(CloudFunctionLibrary cloudFunctionLibrary)
     {
         _cloudFunctionLibrary = cloudFunctionLibrary;
     }
 
+    /// <summary>
+    /// Function which starts the exception handler and handles the logging logic.
+    /// </summary>
     public void StartCrashHandler()
     {
         if (s_isCreated)

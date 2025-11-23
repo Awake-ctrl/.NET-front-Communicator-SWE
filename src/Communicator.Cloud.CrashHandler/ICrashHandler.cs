@@ -17,6 +17,10 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Communicator.Cloud.CrashHandler;
+
+/// <summary>
+/// Interface providing the function to start the crash handler.
+/// </summary>
 public interface ICrashHandler
 {
     void StartCrashHandler();

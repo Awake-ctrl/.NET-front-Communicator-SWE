@@ -18,16 +18,36 @@ using System.Threading.Tasks;
 using Google.GenAI;
 
 namespace Communicator.Cloud.CrashHandler;
+
+/// <summary>
+/// Object which is the Azure-OpenAI client.
+/// Used to provide insights from exceptions.
+/// </summary>
 public class InsightProvider
 {
+    /// <summary>
+    /// OpenAI client.
+    /// </summary>
     private Client _client;
 
+    /// <summary>
+    /// ApiKey for connecting to GEMINI.
+    /// </summary>
     private string _apiKey;
 
+    /// <summary>
+    /// Connection flag to check AI connection.
+    /// </summary>
     private bool _connectionFlag;
 
+    /// <summary>
+    /// Deployment model available in Google gemini.
+    /// </summary>
     private string _deploymentModel = "gemini-2.5-flash";
 
+    /// <summary>
+    /// Constructor for Insight Provider.
+    /// </summary>
     public InsightProvider()
     {
         try
@@ -45,7 +65,11 @@ public class InsightProvider
             _connectionFlag = false;
         }
     }
-
+    /// <summary>
+    /// Function to get the AI insights on crashes and execptions.
+    /// </summary>
+    /// <param name="exceptionPrompt"> Crash data from the crashhandler. </param>
+    /// <returns>AI response string</returns>
     public async Task<string> GetInsights(string exceptionPrompt)
     {
         Google.GenAI.Types.GenerateContentResponse response;
