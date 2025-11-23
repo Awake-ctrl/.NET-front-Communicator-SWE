@@ -54,41 +54,47 @@ public class NegotiateFunction
     /// </summary>
     [Function("negotiate")]
     public async Task<NegotiateResponse> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [SignalRConnectionInfoInput(HubName = "meetingHub", UserId = "{meetingId}")]
-        SignalRConnectionInfo connectionInfo)
+    [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
+    [SignalRConnectionInfoInput(HubName = "meetingHub")] SignalRConnectionInfo connectionInfo)
     {
-        // Extract meeting id from the query string
-        NameValueCollection query = HttpUtility.ParseQueryString(req.Url.Query);
+        // Parse meetingId from query string
+        var query = HttpUtility.ParseQueryString(req.Url.Query);
         string? meetingId = query["meetingId"];
+
+        if (string.IsNullOrEmpty(meetingId))
+        {
+            var bad = req.CreateResponse(HttpStatusCode.BadRequest);
+            await bad.WriteStringAsync("meetingId is required");
+            return new NegotiateResponse { HttpResponse = bad };
+        }
 
         _logger.LogInformation($"Negotiation request received. MeetingId={meetingId}");
 
-        // Create HTTP response containing SignalR URL, access token, and meeting ID
-        HttpResponseData httpResponse = req.CreateResponse(HttpStatusCode.OK);
-        await httpResponse.WriteAsJsonAsync(new
+        // Prepare the group action
+        var groupAction = new SignalRGroupAction(SignalRGroupActionType.Add)
+        {
+            UserId = meetingId,
+            GroupName = meetingId
+        };
+
+        // Prepare HTTP response
+        var http = req.CreateResponse(HttpStatusCode.OK);
+        await http.WriteAsJsonAsync(new
         {
             url = connectionInfo.Url,
             accessToken = connectionInfo.AccessToken,
             meetingId
         });
 
-        // Create group action to add the user to a SignalR group matching the meeting ID
-        var groupAddAction = new SignalRGroupAction(SignalRGroupActionType.Add)
-        {
-            UserId = meetingId,
-            GroupName = meetingId
-        };
-
-        // Return both SignalR and HTTP responses
+        // IMPORTANT: SignalROutput MUST be an array
         return new NegotiateResponse
         {
-            SignalROutput = new
+            SignalROutput = new object[]
             {
-                connectionInfo,
-                groupAddAction
+            connectionInfo,
+            groupAction
             },
-            HttpResponse = httpResponse
+            HttpResponse = http
         };
     }
 }
