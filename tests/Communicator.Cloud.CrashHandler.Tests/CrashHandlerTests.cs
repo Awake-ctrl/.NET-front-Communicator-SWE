@@ -29,11 +29,6 @@ public class CrashHandlerTests
 
         testCrashHandler.StartCrashHandler();
 
-        AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
-        {
-            Exception ex = e.ExceptionObject as Exception;
-        };
-
         var crashingThread = new Thread(() =>
         {
             throw new Exception("Intentional Crashing...");
